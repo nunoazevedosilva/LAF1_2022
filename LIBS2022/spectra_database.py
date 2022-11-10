@@ -13,6 +13,15 @@ import re
 #     arr = np.array([np.fromstring(lista[i][1:-1],sep=',') for i in range(0,len(lista)-1)])
 #     return arr
 
+# def get_spectra_online(element, density = 1e17, temperature=1):
+#     density_str = '{:.2e}'.format(density).replace('e+','e')
+#     temperature_str = '{:.2f}'.format(temperature)
+#     URL = "https://physics.nist.gov/cgi-bin/ASD/lines1.pl?composition="+element+"%3A100&mytext%5B%5D="+element+"&myperc%5B%5D=100&spectra="+element+"0-2&low_w=250&limits_type=0&upp_w=900&show_av=2&unit=1&resolution=100000&temp="+temperature_str+"&eden="+density_str+"&maxcharge=2&min_rel_int=0.01&libs=1"
+#     page = requests.get(URL)
+#     lista = page.text.split('var dataSticksArray=')[1].split(';')[0].replace('],',']').replace('null','0').split('\n')[1:]
+#     arr = np.array([np.fromstring(lista[i][1:-1],sep=',') for i in range(0,len(lista)-1)])
+#     return arr
+
 def get_spectra_online(element, density = 1e17, temperature=1):
     density_str = '{:.2e}'.format(density).replace('e+','e')
     temperature_str = '{:.2f}'.format(temperature)
@@ -20,7 +29,23 @@ def get_spectra_online(element, density = 1e17, temperature=1):
     page = requests.get(URL)
     lista = page.text.split('var dataSticksArray=')[1].split(';')[0].replace('],',']').replace('null','0').split('\n')[1:]
     arr = np.array([np.fromstring(lista[i][1:-1],sep=',') for i in range(0,len(lista)-1)])
-    return arr
+    
+    x=np.linspace(250, 900,10000)
+    y1=np.zeros(len(x))
+    R=100
+    for i in range(0,len(spectrum1[:,1])):
+        y1+=spectrum1[i,1]*np.exp(-(x-np.ones(len(x))*spectrum1[i,0])**2*R)
+
+    y2=np.zeros(len(x))
+    for i in range(0,len(spectrum1[:,1])):
+        y2+=spectrum1[i,2]*np.exp(-(x-np.ones(len(x))*spectrum1[i,0])**2*R)
+
+    y3=np.zeros(len(x))
+    for i in range(0,len(spectrum1[:,1])):
+        y3+=spectrum1[i,3]*np.exp(-(x-np.ones(len(x))*spectrum1[i,0])**2*R)
+
+    return np.transpose(np.vstack([x,y1,y2,y3]))
+
 
 def save_spectra(element):
     f = h5py.File('database/' + element +'.h5', 'w' )
